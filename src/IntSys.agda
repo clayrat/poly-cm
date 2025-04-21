@@ -24,17 +24,34 @@ record IS {ℓᵃ ℓᵇ}
 
 open IS public
 
--- duality
-_⊥ : IS A B ℓ◃ ℓ▹ → IS A B (ℓ◃ ⊔ ℓ▹) ℓ◃
-(w ⊥) .com a     = (c : w .com a) → w .res c
-(w ⊥) .res {a} _ = w .com a
-(w ⊥) .out d c   = w .out c (d c)
-
 -- extension of a function
 [_]⇒ : (A → B) → IS A B ℓ◃ ℓ▹
 [ f ]⇒ .com _       = ⊤
 [ f ]⇒ .res _       = ⊤
 [ f ]⇒ .out {a} _ _ = f a
+
+-- identity
+skip : IS A A ℓ◃ ℓ▹
+skip = [ id ]⇒
+
+-- constant
+cnst : Pred A ℓ → IS A B ℓ ℓ▹
+cnst p .com     = p
+cnst p .res _   = ⊥
+cnst p .out _ b = ⊥.elim (lower b)
+
+-- duality
+_^⊥ : IS A B ℓ◃ ℓ▹ → IS A B (ℓ◃ ⊔ ℓ▹) ℓ◃
+(w ^⊥) .com a     = (c : w .com a) → w .res c
+(w ^⊥) .res {a} _ = w .com a
+(w ^⊥) .out d c   = w .out c (d c)
+
+-- composition
+-- TODO ∙
+inseq : IS A B ℓ◃ ℓ▹ → IS B C ℓ◃′ ℓ▹′ → IS A C (ℓ◃ ⊔ ℓ▹ ⊔ ℓ◃′) (ℓ▹ ⊔ ℓ▹′)
+inseq ab bc .com a                      = Σ[ ca ꞉ ab .com a ] ((x : ab .res ca) → bc .com (ab .out ca x))
+inseq ab bc .res {a} (ca , cf)          = Σ[ x ꞉ ab .res ca ] bc .res (cf x)
+inseq ab bc .out {a} (ca , cf) (x , cx) = bc .out (cf x) cx
 
 -- angelic extension for a transition system
 [_]↑ : TS A B ℓ → IS A B ℓ ℓ▹
@@ -47,34 +64,6 @@ _⊥ : IS A B ℓ◃ ℓ▹ → IS A B (ℓ◃ ⊔ ℓ▹) ℓ◃
 [ t ]↓ .com _     = ⊤
 [ t ]↓ .res {a} _ = t .tr a
 [ t ]↓ .out _ n   = t .nx n
-
-IFace : 𝒰 ℓᵃ → (ℓ◃ ℓ▹ : Level) → 𝒰 (ℓᵃ ⊔ ℓsuc ℓ◃ ⊔ ℓsuc ℓ▹)
-IFace A ℓ◃ ℓ▹  = IS A A ℓ◃ ℓ▹
-
--- extension of an interaction system
--- a predicate transformer
-isys-pow : IS A B ℓ◃ ℓ▹ → Pred B (ℓ◃ ⊔ ℓ▹) → Pred A (ℓ◃ ⊔ ℓ▹)
-isys-pow is pb a = Σ[ ac ꞉ is .com a ] ((ar : is .res ac) → pb (is .out ac ar) )
-
-instance
-  ⟦⟧-IS : ⟦⟧-notation (IS A B ℓ◃ ℓ▹)
-  ⟦⟧-IS {A} {B} {ℓ◃} {ℓ▹} = brackets (Pred B (ℓ◃ ⊔ ℓ▹) → Pred A (ℓ◃ ⊔ ℓ▹)) isys-pow
-
--- functoriality / monotonicity
-
-functoriality : (w : IS A B ℓ◃ ℓ▹) (X Y : Pred B (ℓ◃ ⊔ ℓ▹))
-              → X ⊆ Y → ⟦ w ⟧ X ⊆ ⟦ w ⟧ Y
-functoriality w X Y xsy (wx , wf) = wx , (xsy ∘ wf)
-
-inseq : IS A B ℓ◃ ℓ▹ → IS B C ℓ◃′ ℓ▹′ → IS A C (ℓ◃ ⊔ ℓ▹ ⊔ ℓ◃′) (ℓ▹ ⊔ ℓ▹′)
-inseq ab bc .com a                      = Σ[ ca ꞉ ab .com a ] ((x : ab .res ca) → bc .com (ab .out ca x))
-inseq ab bc .res {a} (ca , cf)          = Σ[ x ꞉ ab .res ca ] bc .res (cf x)
-inseq ab bc .out {a} (ca , cf) (x , cx) = bc .out (cf x) cx
-
--- TODO ∙
-
-skip : IFace A ℓ◃ ℓ▹
-skip = [ id ]⇒
 
 munit : A → IS S (A × S) ℓ◃ ℓ▹
 munit a = [ (a ,_) ]⇒
@@ -108,6 +97,10 @@ tensor ab cs .com (a , c) = ab .com a × cs .com c
 tensor ab cs .res (abc , csc) = ab .res abc × cs .res csc
 tensor ab cs .out (abc , csc) (abr , csr) = ab .out abc abr , cs .out csc csr
 
+-- homogeneous interaction system aka interface
+IFace : 𝒰 ℓᵃ → (ℓ◃ ℓ▹ : Level) → 𝒰 (ℓᵃ ⊔ ℓsuc ℓ◃ ⊔ ℓsuc ℓ▹)
+IFace A ℓ◃ ℓ▹  = IS A A ℓ◃ ℓ▹
+
 -- Angelic iteration
 
 data Prog (i : IFace S ℓ◃ ℓ▹) : S → 𝒰 (level-of-type S ⊔ ℓ◃ ⊔ ℓ▹) where
@@ -128,3 +121,60 @@ angelic-iter i .res = tprog
 angelic-iter i .out = rprog
 
 -- Demonic iteration ?
+
+-- extension of an interaction system
+-- a predicate transformer
+isys-pow : IS A B ℓ◃ ℓ▹ → Pred B ℓ → Pred A (ℓ◃ ⊔ ℓ▹ ⊔ ℓ)
+isys-pow is pb a = Σ[ ac ꞉ is .com a ] ((ar : is .res ac) → pb (is .out ac ar))
+
+instance
+  ⟦⟧-IS : {ℓ : Level} → ⟦⟧-notation (IS A B ℓ◃ ℓ▹)
+  ⟦⟧-IS {A} {B} {ℓ◃} {ℓ▹} {ℓ} = brackets (Pred B ℓ → Pred A (ℓ◃ ⊔ ℓ▹ ⊔ ℓ)) isys-pow
+
+-- functoriality / monotonicity
+
+functoriality : (w : IS A B ℓ◃ ℓ▹) (X Y : Pred B (ℓ◃ ⊔ ℓ▹))
+              → X ⊆ Y → ⟦ w ⟧ X ⊆ ⟦ w ⟧ Y
+functoriality w X Y xsy (wx , wf) = wx , (xsy ∘ wf)
+
+-- All
+
+all : {B : 𝒰 ℓᵇ} (w : IS A B ℓ◃ ℓ▹) (X : Pred B ℓ)
+    → Pred (Σ[ b ꞉ B ] X b) ℓ′ → Pred (Σ[ a ꞉ A ] (⟦ w ⟧ X a)) (ℓ▹ ⊔ ℓ′)
+all w X P (a , wa , k) = (r : w .res wa) → P (w .out wa r , k r)
+
+-- Any
+
+any : {B : 𝒰 ℓᵇ} (w : IS A B ℓ◃ ℓ▹) → (X : Pred B ℓ)
+    → Pred (Σ[ b ꞉ B ] X b) ℓ′ → Pred (Σ[ a ꞉ A ] (⟦ w ⟧ X a)) (ℓ▹ ⊔ ℓ′)
+any w X P (a , wa , k) = Σ[ r ꞉ w .res wa ] P (w .out wa r , k r)
+
+-- correctness
+
+skip-correct-l : {X : Pred A ℓ}
+               → ⟦ skip {ℓ◃ = ℓ◃} {ℓ▹ = ℓ▹} ⟧ X ⊆ X
+skip-correct-l (_ , k) = k (lift tt)
+
+skip-correct-r : {X : Pred A ℓ}
+               → X ⊆ ⟦ skip {ℓ◃ = ℓ◃} {ℓ▹ = ℓ▹} ⟧ X
+skip-correct-r xa = lift tt , (λ _ → xa)
+
+skip-correct : {X : Pred A ℓ}
+             → ⟦ skip {ℓ◃ = ℓ◃} {ℓ▹ = ℓ▹} ⟧ X ≈ X
+skip-correct {X} = skip-correct-l {X = X} , skip-correct-r {X = X}
+
+cnst-correct-l : {X : Pred A ℓ} {Y : Pred A ℓ′}
+               → ⟦ cnst {ℓ▹ = ℓ▹} X ⟧ Y ⊆ X
+cnst-correct-l (xa , _) = xa
+
+cnst-correct-r : {X : Pred A ℓ} {Y : Pred A ℓ′} {a : A}
+               → X ⊆ ⟦ cnst {ℓ▹ = ℓ▹} X ⟧ Y
+cnst-correct-r {Y} xa = xa , λ b → ⊥.elim {A = λ q → Y (⊥.elim q)} (lower b)
+
+dual-correct-l : {w : IS A B ℓ◃ ℓ▹} {X : Pred B ℓ}
+               → ⟦ w ^⊥ ⟧ X ⊆ (λ a → (c : w .com a) → Σ[ r ꞉ w .res c ] X (w .out c r))
+dual-correct-l (f , g) c = (f c) , (g c)
+
+dual-correct-r : {w : IS A B ℓ◃ ℓ▹} {X : Pred B ℓ} {a : A}
+               → (λ a → (c : w .com a) → Σ[ r ꞉ w .res c ] X (w .out c r)) ⊆ ⟦ w ^⊥ ⟧ X
+dual-correct-r f = (λ q → f q .fst) , (λ q → f q .snd)
