@@ -68,7 +68,7 @@ munit : A → IS S (A × S) ℓ◃ ℓ▹
 munit a = [ (a ,_) ]⇒
 
 curry : (A → IS B C ℓ◃ ℓ▹) → IS (A × B) C ℓ◃ ℓ▹
-curry f .com (a , b) = f a .com b
+curry f .com (a , b)     = f a .com b
 curry f .res {a = a , b} = f a .res
 curry f .out {a = a , b} = f a .out
 
@@ -92,8 +92,8 @@ sigma     f .out (a , fa) = f a .out fa
 -- Tensor product
 
 tensor : IS A B ℓ◃ ℓ▹ → IS C S ℓ◃′ ℓ▹′ → IS (A × C) (B × S) (ℓ◃ ⊔ ℓ◃′) (ℓ▹ ⊔ ℓ▹′)
-tensor ab cs .com (a , c) = ab .com a × cs .com c
-tensor ab cs .res (abc , csc) = ab .res abc × cs .res csc
+tensor ab cs .com (a , c)                 = ab .com a × cs .com c
+tensor ab cs .res (abc , csc)             = ab .res abc × cs .res csc
 tensor ab cs .out (abc , csc) (abr , csr) = ab .out abc abr , cs .out csc csr
 
 -- homogeneous interaction system aka interface
@@ -204,3 +204,21 @@ sigma-correct {A} {f} {X} = sigma-correct-l , sigma-correct-r
   sigma-correct-l ((a , fa) , f) = a , fa , f
   sigma-correct-r : (λ b → Σ[ a ꞉ A ] ⟦ f a ⟧ X b) ⊆ ⟦ sigma f ⟧ X
   sigma-correct-r (a , fa , f) = (a , fa) , f
+
+angel-dual : {ts : TS A B ℓ} {X : Pred B ℓ}
+           → ⟦ [_]↑ {ℓ▹ = ℓ} ts ^⊥ ⟧ X ≈ ⟦ [_]↓ {ℓ◃ = ℓ} ts ⟧ X
+angel-dual {ts} {X} = angel-dual-l , angel-dual-r
+  where
+  angel-dual-l : ⟦ [_]↑ {ℓ▹ = ℓ} ts ^⊥ ⟧ X ⊆ ⟦ [_]↓ {ℓ◃ = ℓ} ts ⟧ X
+  angel-dual-l (_ , f) = (lift tt) , f
+  angel-dual-r : ⟦ [_]↓ {ℓ◃ = ℓ} ts ⟧ X ⊆ ⟦ [_]↑ {ℓ▹ = ℓ} ts ^⊥ ⟧ X
+  angel-dual-r (_ , f) = (λ _ → lift tt) , f
+
+demon-dual : {ts : TS A B ℓ} {X : Pred B ℓ}
+           → ⟦ [_]↓ {ℓ◃ = ℓ} ts ^⊥ ⟧ X ≈ ⟦ [_]↑ {ℓ▹ = ℓ} ts ⟧ X
+demon-dual {ts} {X} = demon-dual-l , demon-dual-r
+  where
+  demon-dual-l : ⟦ [_]↓ {ℓ◃ = ℓ} ts ^⊥ ⟧ X ⊆ ⟦ [_]↑ {ℓ▹ = ℓ} ts ⟧ X
+  demon-dual-l (f , g) = f (lift tt) , g
+  demon-dual-r : ⟦ [_]↑ {ℓ▹ = ℓ} ts ⟧ X ⊆ ⟦ [_]↓ {ℓ◃ = ℓ} ts ^⊥ ⟧ X
+  demon-dual-r (x , f) = (λ _ → x) , f
