@@ -47,11 +47,10 @@ _^⊥ : IS A B ℓ◃ ℓ▹ → IS A B (ℓ◃ ⊔ ℓ▹) ℓ◃
 (w ^⊥) .out d c   = w .out c (d c)
 
 -- composition
--- TODO ∙
-inseq : IS A B ℓ◃ ℓ▹ → IS B C ℓ◃′ ℓ▹′ → IS A C (ℓ◃ ⊔ ℓ▹ ⊔ ℓ◃′) (ℓ▹ ⊔ ℓ▹′)
-inseq ab bc .com a                      = Σ[ ca ꞉ ab .com a ] ((x : ab .res ca) → bc .com (ab .out ca x))
-inseq ab bc .res {a} (ca , cf)          = Σ[ x ꞉ ab .res ca ] bc .res (cf x)
-inseq ab bc .out {a} (ca , cf) (x , cx) = bc .out (cf x) cx
+_∙is_ : IS A B ℓ◃ ℓ▹ → IS B C ℓ◃′ ℓ▹′ → IS A C (ℓ◃ ⊔ ℓ▹ ⊔ ℓ◃′) (ℓ▹ ⊔ ℓ▹′)
+_∙is_ ab bc .com a                      = Σ[ ca ꞉ ab .com a ] ((x : ab .res ca) → bc .com (ab .out ca x))
+_∙is_ ab bc .res {a} (ca , cf)          = Σ[ x ꞉ ab .res ca ] bc .res (cf x)
+_∙is_ ab bc .out {a} (ca , cf) (x , cx) = bc .out (cf x) cx
 
 -- angelic extension for a transition system
 [_]↑ : TS A B ℓ → IS A B ℓ ℓ▹
@@ -74,7 +73,7 @@ curry f .res {a = a , b} = f a .res
 curry f .out {a = a , b} = f a .out
 
 bind : IS S (A × B) ℓ◃ ℓ▹ → (A → IS B C ℓ◃′ ℓ▹′) → IS S C (ℓ◃ ⊔ ℓ▹ ⊔ ℓ◃′) (ℓ▹ ⊔ ℓ▹′)
-bind sab = inseq sab ∘ curry
+bind sab = sab ∙is_ ∘ curry
 
 -- Cartesian product
 
@@ -151,30 +150,57 @@ any w X P (a , wa , k) = Σ[ r ꞉ w .res wa ] P (w .out wa r , k r)
 
 -- correctness
 
-skip-correct-l : {X : Pred A ℓ}
-               → ⟦ skip {ℓ◃ = ℓ◃} {ℓ▹ = ℓ▹} ⟧ X ⊆ X
-skip-correct-l (_ , k) = k (lift tt)
-
-skip-correct-r : {X : Pred A ℓ}
-               → X ⊆ ⟦ skip {ℓ◃ = ℓ◃} {ℓ▹ = ℓ▹} ⟧ X
-skip-correct-r xa = lift tt , (λ _ → xa)
-
 skip-correct : {X : Pred A ℓ}
              → ⟦ skip {ℓ◃ = ℓ◃} {ℓ▹ = ℓ▹} ⟧ X ≈ X
-skip-correct {X} = skip-correct-l {X = X} , skip-correct-r {X = X}
+skip-correct {X} = skip-correct-l , skip-correct-r
+  where
+  skip-correct-l : ⟦ skip ⟧ X ⊆ X
+  skip-correct-l (_ , k) = k (lift tt)
+  skip-correct-r : X ⊆ ⟦ skip ⟧ X
+  skip-correct-r xa = lift tt , (λ _ → xa)
 
-cnst-correct-l : {X : Pred A ℓ} {Y : Pred A ℓ′}
-               → ⟦ cnst {ℓ▹ = ℓ▹} X ⟧ Y ⊆ X
-cnst-correct-l (xa , _) = xa
+cnst-correct : {X : Pred A ℓ} {Y : Pred A ℓ′}
+             → ⟦ cnst {ℓ▹ = ℓ▹} X ⟧ Y ≈ X
+cnst-correct {X} {Y} = cnst-correct-l , cnst-correct-r
+  where
+  cnst-correct-l : ⟦ cnst X ⟧ Y ⊆ X
+  cnst-correct-l (xa , _) = xa
+  cnst-correct-r : X ⊆ ⟦ cnst X ⟧ Y
+  cnst-correct-r xa = xa , λ b → ⊥.elim {A = λ q → Y (⊥.elim q)} (lower b)
 
-cnst-correct-r : {X : Pred A ℓ} {Y : Pred A ℓ′} {a : A}
-               → X ⊆ ⟦ cnst {ℓ▹ = ℓ▹} X ⟧ Y
-cnst-correct-r {Y} xa = xa , λ b → ⊥.elim {A = λ q → Y (⊥.elim q)} (lower b)
+dual-correct : {w : IS A B ℓ◃ ℓ▹} {X : Pred B ℓ}
+             → ⟦ w ^⊥ ⟧ X ≈ (λ a → (c : w .com a) → Σ[ r ꞉ w .res c ] X (w .out c r))
+dual-correct {w} {X} = dual-correct-l , dual-correct-r
+  where
+  dual-correct-l : ⟦ w ^⊥ ⟧ X ⊆ (λ a → (c : w .com a) → Σ[ r ꞉ w .res c ] X (w .out c r))
+  dual-correct-l (f , g) c = (f c) , (g c)
+  dual-correct-r : (λ a → (c : w .com a) → Σ[ r ꞉ w .res c ] X (w .out c r)) ⊆ ⟦ w ^⊥ ⟧ X
+  dual-correct-r f = (λ q → f q .fst) , (λ q → f q .snd)
 
-dual-correct-l : {w : IS A B ℓ◃ ℓ▹} {X : Pred B ℓ}
-               → ⟦ w ^⊥ ⟧ X ⊆ (λ a → (c : w .com a) → Σ[ r ꞉ w .res c ] X (w .out c r))
-dual-correct-l (f , g) c = (f c) , (g c)
+seq-correct : {w : IS A B ℓ◃ ℓ▹} {v : IS B C ℓ◃′ ℓ▹′}
+              {X : Pred C ℓ}
+            → ⟦ w ∙is v ⟧ X ≈ (⟦ w ⟧ ∘ ⟦ v ⟧) X
+seq-correct {w} {v} {X} = seq-correct-l , seq-correct-r
+  where
+  seq-correct-l : ⟦ w ∙is v ⟧ X ⊆ (⟦ w ⟧ ∘ ⟦ v ⟧) X
+  seq-correct-l ((ac , wf) , g) = ac , λ aw → (wf aw , λ av → g (aw , av))
+  seq-correct-r : (⟦ w ⟧ ∘ ⟦ v ⟧) X ⊆ ⟦ w ∙is v ⟧ X
+  seq-correct-r (ac , f) = (ac , λ ar → f ar .fst) , λ ar → f (ar .fst) .snd (ar .snd)
 
-dual-correct-r : {w : IS A B ℓ◃ ℓ▹} {X : Pred B ℓ} {a : A}
-               → (λ a → (c : w .com a) → Σ[ r ꞉ w .res c ] X (w .out c r)) ⊆ ⟦ w ^⊥ ⟧ X
-dual-correct-r f = (λ q → f q .fst) , (λ q → f q .snd)
+pi-correct : {f : A → IS B C ℓ◃ ℓ▹} {X : Pred C ℓ}
+           → ⟦ pi f ⟧ X ≈ (λ b → (a : A) → ⟦ f a ⟧ X b)
+pi-correct {A} {f} {X} = pi-correct-l , pi-correct-r
+  where
+  pi-correct-l : ⟦ pi f ⟧ X ⊆ (λ b → (a : A) → ⟦ f a ⟧ X b)
+  pi-correct-l (ac , f) a = (ac a) , (λ ar → f (a , ar))
+  pi-correct-r : (λ b → (a : A) → ⟦ f a ⟧ X b) ⊆ ⟦ pi f ⟧ X
+  pi-correct-r f = (λ a → f a .fst) , λ ar → f (ar .fst) .snd (ar .snd)
+
+sigma-correct : {f : A → IS B C ℓ◃ ℓ▹} {X : Pred C ℓ}
+              → ⟦ sigma f ⟧ X ≈ (λ b → Σ[ a ꞉ A ] ⟦ f a ⟧ X b)
+sigma-correct {A} {f} {X} = sigma-correct-l , sigma-correct-r
+  where
+  sigma-correct-l : ⟦ sigma f ⟧ X ⊆ (λ b → Σ[ a ꞉ A ] ⟦ f a ⟧ X b)
+  sigma-correct-l ((a , fa) , f) = a , fa , f
+  sigma-correct-r : (λ b → Σ[ a ꞉ A ] ⟦ f a ⟧ X b) ⊆ ⟦ sigma f ⟧ X
+  sigma-correct-r (a , fa , f) = (a , fa) , f
