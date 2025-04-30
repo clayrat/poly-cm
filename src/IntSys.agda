@@ -34,11 +34,18 @@ open IS public
 skip : IS A A ℓ◃ ℓ▹
 skip = [ id ]⇒
 
--- constant
+-- constant aka assert
 cnst : Pred A ℓ → IS A B ℓ ℓ▹
 cnst p .com     = p
-cnst p .res _   = ⊥
-cnst p .out _ b = ⊥.elim (lower b)
+cnst _ .res _   = ⊥
+cnst _ .out _ b = ⊥.elim (lower b)
+
+-- assume
+-- TODO is this correct?
+assm : Pred A ℓ → IS A B ℓ◃ ℓ
+assm _ .com _     = ⊥
+assm p .res {a} _ = p a
+assm _ .out c _   = ⊥.elim (lower c)
 
 -- duality
 _^⊥ : IS A B ℓ◃ ℓ▹ → IS A B (ℓ◃ ⊔ ℓ▹) ℓ◃
@@ -122,19 +129,27 @@ angelic-iter i .out = rprog
 -- Demonic iteration ?
 
 -- extension of an interaction system
--- a predicate transformer
-isys-pow : IS A B ℓ◃ ℓ▹ → Pred B ℓ → Pred A (ℓ◃ ⊔ ℓ▹ ⊔ ℓ)
-isys-pow is pb a = Σ[ ac ꞉ is .com a ] ((ar : is .res ac) → pb (is .out ac ar))
+-- an angelic predicate transformer
+angel-sem : IS A B ℓ◃ ℓ▹ → Pred B ℓ → Pred A (ℓ◃ ⊔ ℓ▹ ⊔ ℓ)
+angel-sem is pb a = Σ[ ac ꞉ is .com a ] ((ar : is .res ac) → pb (is .out ac ar))
 
 instance
   ⟦⟧-IS : {ℓ : Level} → ⟦⟧-notation (IS A B ℓ◃ ℓ▹)
-  ⟦⟧-IS {A} {B} {ℓ◃} {ℓ▹} {ℓ} = brackets (Pred B ℓ → Pred A (ℓ◃ ⊔ ℓ▹ ⊔ ℓ)) isys-pow
+  ⟦⟧-IS {A} {B} {ℓ◃} {ℓ▹} {ℓ} = brackets (Pred B ℓ → Pred A (ℓ◃ ⊔ ℓ▹ ⊔ ℓ)) angel-sem
+
+-- demonic predicate transformer
+⟦_⟧↓_ : IS A B ℓ◃ ℓ▹ → Pred B ℓ → Pred A (ℓ◃ ⊔ ℓ▹ ⊔ ℓ)
+⟦_⟧↓_ is pb a = (ac : is .com a) → Σ[ ar ꞉ is .res ac ] pb (is .out ac ar)
 
 -- functoriality / monotonicity
 
-functoriality : (w : IS A B ℓ◃ ℓ▹) (X Y : Pred B (ℓ◃ ⊔ ℓ▹))
+functoriality : {w : IS A B ℓ◃ ℓ▹} {X Y : Pred B (ℓ◃ ⊔ ℓ▹)}
               → X ⊆ Y → ⟦ w ⟧ X ⊆ ⟦ w ⟧ Y
-functoriality w X Y xsy (wx , wf) = wx , (xsy ∘ wf)
+functoriality xsy (wx , wf) = wx , (xsy ∘ wf)
+
+functoriality-demon : {w : IS A B ℓ◃ ℓ▹} {X Y : Pred B (ℓ◃ ⊔ ℓ▹)}
+                    → X ⊆ Y → (⟦ w ⟧↓ X) ⊆ (⟦ w ⟧↓ Y)
+functoriality-demon xsy wx ac = wx ac .fst , xsy (wx ac .snd) 
 
 -- All
 
