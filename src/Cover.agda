@@ -31,7 +31,7 @@ module ISCover (w : IFace A ℓ◃ ℓ▹) where
   trans◁ (squash x y i) bv = squash (trans◁ x bv) (trans◁ y bv) i
 
   -- closure (infinitary preorder) properties
-  
+
   refl◁ : {U : A → 𝒰 ℓ}
        → U ⊆ (_◁is U)
   refl◁ = dir
@@ -54,7 +54,7 @@ module ISCover (w : IFace A ℓ◃ ℓ▹) where
   inter◁ (dir (ux , vx)) = (dir ux) , (dir vx)
   inter◁ (branch wx k) = branch wx (λ c → inter◁ (k c) .fst) , branch wx λ c → inter◁ (k c) .snd
   inter◁ (squash x y i) = squash (inter◁ x .fst) (inter◁ y .fst) i , squash (inter◁ x .snd) (inter◁ y .snd) i
-  
+
   -- saturated subsets
 
   Sat◁ : (A → 𝒰 ℓ) → ((A → 𝒰 ℓ) → 𝒰 (level-of-type A ⊔ ℓ◃ ⊔ ℓ▹ ⊔ ℓ))
